@@ -9,5 +9,5 @@ async function build(target) {
     stdio: "inherit",
   });
 }
-const target = `reactivity`;
+const target = `runtime-dom`;
 build(target);
