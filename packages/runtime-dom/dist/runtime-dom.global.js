@@ -1,7 +1,9 @@
 var VueRuntimeDOM = (function (exports) {
   'use strict';
 
+  const isObject = (value) => value !== null && typeof value === "object";
   const extend = Object.assign;
+  const isString = (value) => typeof value === "string";
 
   const nodeOps = {
       // createElement 不同的平台创建的不同
@@ -107,12 +109,36 @@ var VueRuntimeDOM = (function (exports) {
       }
   };
 
+  function createVNode(type, props, children = null) {
+      // 根据type 确定生成不同的虚拟节点
+      const shapeFlag = isString(type)
+          ? 1 /* ShapeFlags.ELEMENT */
+          : isObject(type)
+              ? 2 /* ShapeFlags.FUNCTIONAL_COMPONENT */
+              : 0;
+      const vnode = {
+          __v_isVnode: true,
+          type,
+          props,
+          children,
+          el: null,
+          key: props && props.key,
+          shapeFlag,
+      };
+      return vnode;
+  }
+
   function createAppAPI(render) {
       return function (rootComponent, rootProps) {
           const app = {
+              _props: rootProps,
+              _component: rootComponent,
+              _container: null,
               mount(container) {
-                  debugger;
-                  console.log(container);
+                  // 创建一个vnode
+                  const vnode = createVNode(rootComponent, rootProps);
+                  render(vnode, container);
+                  app._container = container;
               },
           };
           return app;
@@ -120,8 +146,9 @@ var VueRuntimeDOM = (function (exports) {
   }
 
   function createRenderer(rendererOptions) {
+      const render = function () { };
       return {
-          createApp: createAppAPI(),
+          createApp: createAppAPI(render),
       };
   }
 
