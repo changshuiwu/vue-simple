@@ -1,6 +1,10 @@
 import { isArray, isObject, isString } from "@vue/shared";
 import { ShapeFlags } from "./shapeFlag";
 
+export function isVnode(vnode) {
+  return vnode.__v_isVnode;
+}
+
 export function createVNode(type, props, children = null) {
   // 根据type 确定生成不同的虚拟节点
   const shapeFlag = isString(type)
@@ -32,4 +36,11 @@ function normalizeChildren(vnode, children) {
     type = ShapeFlags.TEXT_CHILDREN;
   }
   vnode.shapeFlag |= type;
+}
+
+export const Text = Symbol("TEXT");
+export function normalizeVNode(child) {
+  if (isObject(child)) return child;
+
+  return createVNode(Text, null, String(child));
 }

@@ -26,7 +26,7 @@ class ComputedImpl {
   constructor(getter, public setter) {
     this._effect = effect(getter, {
       lazy: true,
-      schedular: () => {
+      scheduler: () => {
         if (!this._dirty) {
           this._dirty = true;
           trigger(this, TriggerOpTypes.SET, "value");

@@ -92,8 +92,8 @@ export function trigger(target, type, key, newValue?, oldValue?) {
   }
 
   effects.forEach((effect: any) => {
-    if (effect.options.schedular) {
-      effect.options.schedular(effect);
+    if (effect.options.scheduler) {
+      effect.options.scheduler(effect);
     } else {
       effect();
     }
