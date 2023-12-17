@@ -13,6 +13,9 @@
         const {createApp} = VueRuntimeDOM
 
         const app = {
+            setup(props, ctx) {
+                console.log(props, ctx)
+            },
             render() {
                 console.log(1)
             }

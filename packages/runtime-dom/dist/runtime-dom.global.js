@@ -3,6 +3,7 @@ var VueRuntimeDOM = (function (exports) {
 
   const isObject = (value) => value !== null && typeof value === "object";
   const extend = Object.assign;
+  const isArray = Array.isArray;
   const isString = (value) => typeof value === "string";
 
   const nodeOps = {
@@ -114,7 +115,7 @@ var VueRuntimeDOM = (function (exports) {
       const shapeFlag = isString(type)
           ? 1 /* ShapeFlags.ELEMENT */
           : isObject(type)
-              ? 2 /* ShapeFlags.FUNCTIONAL_COMPONENT */
+              ? 4 /* ShapeFlags.STATEFUL_COMPONENT */
               : 0;
       const vnode = {
           __v_isVnode: true,
@@ -122,10 +123,25 @@ var VueRuntimeDOM = (function (exports) {
           props,
           children,
           el: null,
+          component: null, // 组件对应的实例
           key: props && props.key,
           shapeFlag,
       };
+      normalizeChildren(vnode, children);
       return vnode;
+  }
+  function normalizeChildren(vnode, children) {
+      let type = 0;
+      if (children == null) {
+          children = null;
+      }
+      else if (isArray(children)) {
+          type = 16 /* ShapeFlags.ARRAY_CHILDREN */;
+      }
+      else {
+          type = 8 /* ShapeFlags.TEXT_CHILDREN */;
+      }
+      vnode.shapeFlag |= type;
   }
 
   function createAppAPI(render) {
@@ -145,8 +161,79 @@ var VueRuntimeDOM = (function (exports) {
       };
   }
 
+  const PublicInstanceProxyHandler = {
+      get() { },
+      set() { },
+  };
+
+  function createComponentInstance(vnode) {
+      const { type } = vnode;
+      const instance = {
+          vnode,
+          type,
+          props: {},
+          attrs: {},
+          slots: {},
+          setupState: {},
+          isMounted: false,
+          ctx: {},
+          render: null,
+      };
+      instance.ctx = { _: instance };
+      return instance;
+  }
+  function setupComponent(instance) {
+      const { props, children, shapeFlag } = instance.vnode;
+      instance.props = props;
+      instance.children = children;
+      if (shapeFlag & 4 /* ShapeFlags.STATEFUL_COMPONENT */) {
+          setupStateFulComponent(instance);
+      }
+  }
+  function setupStateFulComponent(instance) {
+      instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandler);
+      const Component = instance.type;
+      const { setup, render } = Component;
+      const setupContext = createContext(instance);
+      setup(instance.props, setupContext);
+      render && render(instance.ctx);
+  }
+  function createContext(instance) {
+      return {
+          attrs: instance.attrs,
+          props: instance.props,
+          slots: instance.slots,
+          emit: () => { },
+          expose: () => { },
+      };
+  }
+
   function createRenderer(rendererOptions) {
-      const render = function () { };
+      const mountComponent = function (initialVnode, container) {
+          // 1、根据虚拟节点创造一个实例
+          const instance = (initialVnode.component =
+              createComponentInstance(initialVnode));
+          //   2、调用setup
+          setupComponent(instance);
+      };
+      const processComponent = function (n1, n2, container) {
+          if (n1 == null) {
+              // 挂载
+              mountComponent(n2);
+          }
+      };
+      const patch = function (n1, n2, container) {
+          const { shapeFlag } = n2;
+          if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
+              console.log("元素");
+          }
+          else if (shapeFlag & 4 /* ShapeFlags.STATEFUL_COMPONENT */) {
+              processComponent(n1, n2);
+          }
+      };
+      const render = function (vnode, container) {
+          patch(null, vnode);
+      };
       return {
           createApp: createAppAPI(render),
       };
