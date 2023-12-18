@@ -10,19 +10,21 @@
 
     <div id="app"></div>
     <script>
-        const {createApp, h, ref} = VueRuntimeDOM
+        
 
-        const flag = ref(true)
-
-        const fn = () => {
-            flag.value = !flag.value
-        }
+        const {createApp} = VueRuntimeDOM
        
         const app = {
             setup(props, ctx) {
+                const {h, ref} = VueRuntimeDOM
+
+                const flag = ref(true)
+                const fn = () => {
+                    flag.value = !flag.value
+                }
                 return (proxy) => {
-                   return  flag.value ?  h('p', {a:1, style: {color: 'red'}, onClick: fn}, 'hello') :
-                     h('div', {a:1, style: {color: 'red'}, onClick: fn}, 'word')
+                   return  flag.value ?  h('div', {a:1, style: {color: 'red'}, onClick: fn}, 'hello') :
+                     h('div', {a:1, style: {color: 'blue'}, onClick: fn}, 'word')
                 }
             },
             render(proxy) {

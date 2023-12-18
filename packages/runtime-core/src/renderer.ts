@@ -87,8 +87,41 @@ export function createRenderer(rendererOptions) {
 
     hostInsert(el, container, anchor);
   };
-  const patchProps = (oldProps, newProps) => {
+  const patchProps = (oldProps, newProps, el) => {
     if (oldProps !== newProps) {
+      for (const key in newProps) {
+        const prev = oldProps[key];
+        const next = newProps[key];
+        if (prev !== next) {
+          hostPatchProp(el, key, prev, next);
+        }
+      }
+      for (let key in oldProps) {
+        if (!(key in newProps)) {
+          hostPatchProp(el, key, oldProps[key], null);
+        }
+      }
+    }
+  };
+  const unmountChildren = (children) => {
+    for (let i = 0; i < children.length; i++) {
+      unmount(children[i]);
+    }
+  };
+  const patchChildren = (n1, n2, container) => {
+    const c1 = n1.children;
+    const c2 = n2.children;
+    const prevShapeFlag = n1.shapeFlag;
+    const shapeFlag = n2.shapeFlag;
+
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      // c1是组件 需要卸载移除
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        unmountChildren(c1);
+      }
+      if (c1 !== c2) {
+        hostSetElementText(container, c2);
+      }
     }
   };
   const patchElement = (n1, n2, container) => {
@@ -98,7 +131,9 @@ export function createRenderer(rendererOptions) {
     const oldProps = n1.props || {};
     const newProps = n2.props || {};
 
-    patchProps(oldProps, newProps);
+    patchProps(oldProps, newProps, el);
+
+    patchChildren(n1, n2, el);
   };
   const processElement = function (n1, n2, container, anchor = null) {
     if (n1 == null) {
