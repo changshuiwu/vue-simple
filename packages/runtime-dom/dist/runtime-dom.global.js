@@ -618,6 +618,22 @@ var VueRuntimeDOM = (function (exports) {
       };
       //   ---------------------组价------------------------
       // 元素------------------------------------------
+      const patchKeyedChildren = (c1, c2, container) => {
+          let i = 0;
+          let e1 = c1.length - 1;
+          let e2 = c2.length - 1;
+          // sync from start
+          while (i <= e1 && i <= e2) {
+              const n1 = c1[i];
+              const n2 = c2[i];
+              if (isSameVnodeType(n1, n2)) {
+                  patch(n1, n2, container);
+              }
+              else {
+                  break;
+              }
+          }
+      };
       const mountChildren = function (childen, container) {
           for (let child of childen) {
               child = normalizeVNode(child);
@@ -671,6 +687,28 @@ var VueRuntimeDOM = (function (exports) {
               }
               if (c1 !== c2) {
                   hostSetElementText(container, c2);
+              }
+          }
+          else {
+              if (prevShapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+                  if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+                      // 前后节点对比
+                      patchKeyedChildren(c1, c2, container);
+                  }
+                  else {
+                      // 说明 这里 现在是null
+                      unmountChildren(c1);
+                  }
+              }
+              else {
+                  // 上一次是文本,需要清除文本， 然后可能需要挂载
+                  if (prevShapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
+                      hostSetElementText(container, "");
+                  }
+                  // 这次是元素
+                  if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+                      mountChildren(c2, container);
+                  }
               }
           }
       };
