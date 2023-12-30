@@ -27,13 +27,15 @@
                     h('div', {a:1, style: {color: 'red'}, onClick: fn}, [
                         h('div', {key: 'a'}, 'a'),
                         h('div', {key: 'b'}, 'b'),
-                        h('div', {key: 'c'}, 'c')
+                        h('div', {key: 'c'}, 'c'),
+                        h('div', {key: 'd'}, 'd')
+
                     ]) :
                      h('div', {a:1, style: {color: 'blue'}, onClick: fn}, [
+                         h('div', {key: 'e'}, 'e'),
                      h('div', {key: 'a'}, 'a'),
                      h('div', {key: 'b'}, 'b'),
-                     h('div', {key: 'd'}, 'd'),
-                     h('div', {key: 'e'}, 'e'),
+                     h('div', {key: 'c'}, 'c'),
                      ])
                 }
             },

@@ -629,6 +629,60 @@ function createRenderer(rendererOptions) {
             else {
                 break;
             }
+            i++;
+        }
+        // sync from end
+        while (i <= e1 && i <= e2) {
+            const n1 = c1[e1];
+            const n2 = c2[e2];
+            if (isSameVnodeType(n1, n2)) {
+                patch(n1, n2, container);
+            }
+            else {
+                break;
+            }
+            e1--;
+            e2--;
+        }
+        // i 大于 e1，说明有新增的元素
+        if (i > e1) {
+            // 说明老的少， 新的多
+            if (i <= e2) {
+                // 说明这一段是新增的元素
+                //  需要确定是向前插入、还是向后插入
+                const nextPos = e2 + 1;
+                const anchor = nextPos < c2.length ? c2[nextPos].el : null;
+                while (i <= e2) {
+                    patch(null, c2[i], container, anchor);
+                    i++;
+                }
+            }
+        }
+        else if (i > e2) {
+            while (i <= e1) {
+                unmount(c1[i]);
+                i++;
+            }
+        }
+        else {
+            // unkown
+            let s1 = i;
+            let s2 = i;
+            const keyToNewIndexMap = new Map();
+            for (i = s2; i <= e2; i++) {
+                const childVnode = c2[i];
+                keyToNewIndexMap.set(childVnode.key, i);
+            }
+            for (i = s1; i <= e1; i++) {
+                const oldVnode = c1[i];
+                let newIndex = keyToNewIndexMap.get(oldVnode.key);
+                if (newIndex === undefined) {
+                    unmount(oldVnode);
+                }
+                else {
+                    patch(oldVnode, c2[newIndex], container);
+                }
+            }
         }
     };
     const mountChildren = function (childen, container) {
