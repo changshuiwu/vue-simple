@@ -124,6 +124,9 @@ export function createRenderer(rendererOptions) {
         keyToNewIndexMap.set(childVnode.key, i);
       }
 
+      const toBePatched = e2 - s2 + 1;
+      const newIndexToOldIndexMap = new Array(toBePatched).fill(0); // 使用数组的下标作为key， 去映射老的下标
+
       for (i = s1; i <= e1; i++) {
         const oldVnode = c1[i];
         let newIndex = keyToNewIndexMap.get(oldVnode.key);
@@ -131,7 +134,28 @@ export function createRenderer(rendererOptions) {
         if (newIndex === undefined) {
           unmount(oldVnode);
         } else {
+          newIndexToOldIndexMap[newIndex - s2] = i + 1;
           patch(oldVnode, c2[newIndex], container);
+        }
+      }
+
+      const inscreaingNewINdex = getSequeue(newIndexToOldIndexMap);
+      let j = inscreaingNewINdex.length - 1;
+      for (i = toBePatched - 1; i >= 0; i--) {
+        // 倒序插入， 现找到最后一个元素的索引
+        let currentIndex = s2 + i;
+        const currentNode = c2[currentIndex];
+        const anchor =
+          currentIndex + 1 < c2.length ? c2[currentIndex + 1].el : null;
+        if (newIndexToOldIndexMap[i] === 0) {
+          // 说明没有被patched过，需要新增
+          patch(null, currentNode, container, anchor);
+        } else {
+          if (i !== inscreaingNewINdex[j]) {
+            hostInsert(currentNode.el, container, anchor);
+          } else {
+            j--;
+          }
         }
       }
     }
@@ -281,4 +305,53 @@ export function createRenderer(rendererOptions) {
   return {
     createApp: createAppAPI(render),
   };
+}
+
+function getSequeue(arr: number[]) {
+  const p = arr.slice();
+  const len = arr.length;
+  const result = [0];
+  let i, j, u, v, c;
+
+  for (i = 0; i < len; i++) {
+    const arrI = arr[i];
+    if (arrI !== 0) {
+      j = result[result.length - 1];
+      if (arrI > arr[j]) {
+        p[i] = j;
+        result.push(i);
+        continue;
+      }
+
+      u = 0;
+      v = result.length - 1;
+
+      while (u < v) {
+        c = (u + v) >> 1;
+
+        if (arr[result[c]] < arrI) {
+          u = c + 1;
+        } else {
+          v = c;
+        }
+      }
+
+      if (arrI < arr[result[u]]) {
+        if (u > 0) {
+          p[i] = result[u - 1];
+        }
+        result[u] = i;
+      }
+    }
+  }
+
+  u = result.length;
+  v = result[u - 1];
+
+  while (u-- > 0) {
+    result[u] = v;
+    v = p[v];
+  }
+
+  return result;
 }
