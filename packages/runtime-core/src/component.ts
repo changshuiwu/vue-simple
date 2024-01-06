@@ -31,16 +31,25 @@ export function setupComponent(instance) {
   }
 }
 
+export let currentInstance = null;
+
+export const setCurrentInstance = (instance) => {
+  currentInstance = instance;
+};
+export const getCurrentInstance = () => currentInstance;
+
 function setupStateFulComponent(instance) {
   instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandler as any);
   const Component = instance.type;
   const { setup } = Component;
 
   if (setup) {
+    currentInstance = instance;
     const setupContext = createContext(instance);
     const setupResult = setup(instance.props, setupContext);
 
     handleSetupResult(instance, setupResult);
+    currentInstance = null;
   } else {
     finishComponentSetup(instance);
   }

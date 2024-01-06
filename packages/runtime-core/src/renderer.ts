@@ -4,6 +4,7 @@ import { createComponentInstance, setupComponent } from "./component";
 import { ShapeFlags } from "./shapeFlag";
 import { Text, normalizeVNode } from "./vnode";
 import { queueJob } from "./scheduler";
+import { invokeArrayfns } from "./apiLifecycle";
 
 export function createRenderer(rendererOptions) {
   const {
@@ -20,7 +21,11 @@ export function createRenderer(rendererOptions) {
   const setRenderEffect = function (instance, container) {
     instance.update = effect(
       function componentEffect() {
+        const { bm, m, bu, u } = instance;
         if (!instance.isMounted) {
+          if (bm) {
+            invokeArrayfns(bm);
+          }
           // 初次渲染
           let proxyToUse = instance.proxy;
           const subTree = (instance.subTree = instance.render.call(
@@ -29,13 +34,22 @@ export function createRenderer(rendererOptions) {
           ));
           patch(null, subTree, container);
           instance.isMounted = true;
+          if (m) {
+            invokeArrayfns(m);
+          }
         } else {
+          if (bu) {
+            invokeArrayfns(bu);
+          }
           // 更新
           const prevTree = instance.subTree;
           let proxyToUse = instance.proxy;
           const nextTree = instance.render.call(proxyToUse, proxyToUse);
 
           patch(prevTree, nextTree, container);
+          if (u) {
+            invokeArrayfns(u);
+          }
         }
       },
       {

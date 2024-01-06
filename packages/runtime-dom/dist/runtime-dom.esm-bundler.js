@@ -513,14 +513,21 @@ function setupComponent(instance) {
         setupStateFulComponent(instance);
     }
 }
+let currentInstance = null;
+const setCurrentInstance = (instance) => {
+    currentInstance = instance;
+};
+const getCurrentInstance = () => currentInstance;
 function setupStateFulComponent(instance) {
     instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandler);
     const Component = instance.type;
     const { setup } = Component;
     if (setup) {
+        currentInstance = instance;
         const setupContext = createContext(instance);
         const setupResult = setup(instance.props, setupContext);
         handleSetupResult(instance, setupResult);
+        currentInstance = null;
     }
     else {
         finishComponentSetup(instance);
@@ -575,24 +582,64 @@ function flushJob() {
     queue.length = 0;
 }
 
+const injectHook = (type, hook, target) => {
+    if (!target) {
+        return console.warn(`in execute in setup`);
+    }
+    else {
+        const hooks = target[type] || (target[type] = []);
+        const wrap = () => {
+            setCurrentInstance(target);
+            hook.call(target);
+            setCurrentInstance(null);
+        };
+        hooks.push(wrap);
+    }
+};
+const createHook = (lifecycle) => (hook, target = currentInstance) => {
+    injectHook(lifecycle, hook, target);
+};
+const onBeforeMount = createHook("bm" /* LifeCycleHooks.BEFORE_MOUNT */);
+const onMounted = createHook("m" /* LifeCycleHooks.MOUNTED */);
+const onBeforeUpdate = createHook("bu" /* LifeCycleHooks.BEFORE_UPDATE */);
+const onUpdated = createHook("u" /* LifeCycleHooks.UPDATED */);
+const invokeArrayfns = (fns) => {
+    for (let i = 0; i < fns.length; i++) {
+        fns[i]();
+    }
+};
+
 function createRenderer(rendererOptions) {
     const { insert: hostInsert, remove: hostRemove, patchProp: hostPatchProp, createElement: hostCreateElement, createText: hostCreateText, setText: hostSetText, setElementText: hostSetElementText, nextSibling: hostNextSibling, } = rendererOptions;
     // 组件------------------------------
     const setRenderEffect = function (instance, container) {
         instance.update = effect(function componentEffect() {
+            const { bm, m, bu, u } = instance;
             if (!instance.isMounted) {
+                if (bm) {
+                    invokeArrayfns(bm);
+                }
                 // 初次渲染
                 let proxyToUse = instance.proxy;
                 const subTree = (instance.subTree = instance.render.call(proxyToUse, proxyToUse));
                 patch(null, subTree, container);
                 instance.isMounted = true;
+                if (m) {
+                    invokeArrayfns(m);
+                }
             }
             else {
+                if (bu) {
+                    invokeArrayfns(bu);
+                }
                 // 更新
                 const prevTree = instance.subTree;
                 let proxyToUse = instance.proxy;
                 const nextTree = instance.render.call(proxyToUse, proxyToUse);
                 patch(prevTree, nextTree, container);
+                if (u) {
+                    invokeArrayfns(u);
+                }
             }
         }, {
             scheduler: queueJob,
@@ -930,5 +977,5 @@ function createApp(rootComponent, rootProps = null) {
     return app;
 }
 
-export { computed, createApp, createRenderer, effect, h, reactive, readonly, ref, shallowReactive, shallowReadonly, shallowRef, toRef, toRefs };
+export { computed, createApp, createRenderer, effect, getCurrentInstance, h, onBeforeMount, onBeforeUpdate, onMounted, onUpdated, reactive, readonly, ref, shallowReactive, shallowReadonly, shallowRef, toRef, toRefs };
 //# sourceMappingURL=runtime-dom.esm-bundler.js.map

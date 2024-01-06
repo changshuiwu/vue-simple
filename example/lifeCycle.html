@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script src="../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script>
+
+    <div id="app"></div>
+    <script>
+        
+
+        const {createApp, getCurrentInstance, h,ref,
+            onBeforeMount,onMounted,onBeforeUpdate,onUpdated } = VueRuntimeDOM
+       
+        const app = {
+            setup(props, ctx) {
+                
+                onBeforeMount(() => {
+                    console.log('onBeforeMount')
+                })
+                onMounted(() => {
+                    console.log('onMounted')
+                })
+                onBeforeUpdate(() => {
+                    console.log('onBeforeUpdate')
+                })
+                onUpdated(() => {
+                    console.log('onUpdated')
+                })
+
+                const instance = getCurrentInstance()
+                console.log(instance)
+                const state = ref('hello')
+                const fn = () => {
+                    state.value = state.value + 1
+                }
+                return () => {
+                    return h('p',{onClick: fn}, state.value)
+                }
+            }
+        }
+        createApp(app, {name: 2}).mount('#app')
+        
+    </script>
+</body>
+</html>
